@@ -11,9 +11,19 @@ import (
 )
 
 type AppGroup struct {
-	opts   options
+	option AppGroupOption
 	ctx    context.Context
 	cancel func()
+}
+
+type AppGroupOption struct {
+	Name string
+
+	// Context defaults to context.Background()
+	Context context.Context
+	// Signals default to [syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT]
+	Signals  []os.Signal
+	Services []Service
 }
 
 type Service interface {
@@ -21,26 +31,25 @@ type Service interface {
 	Stop() error
 }
 
-func NewAppGroup(opts ...Option) *AppGroup {
-	options := options{
-		ctx:  context.Background(),
-		sigs: []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
+func NewAppGroup(opt AppGroupOption) *AppGroup {
+	if opt.Context == nil {
+		opt.Context = context.Background()
 	}
-	for _, o := range opts {
-		o(&options)
+	if opt.Signals == nil {
+		opt.Signals = []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT}
 	}
-	ctx, cancel := context.WithCancel(options.ctx)
+	ctx, cancel := context.WithCancel(opt.Context)
 	return &AppGroup{
-		opts:   options,
+		option: opt,
 		ctx:    ctx,
 		cancel: cancel,
 	}
 }
 
-func (app *AppGroup) Run() error {
-	g, ctx := errgroup.WithContext(app.ctx)
+func (appGroup *AppGroup) Run() error {
+	g, ctx := errgroup.WithContext(appGroup.ctx)
 
-	for _, s := range app.opts.services {
+	for _, s := range appGroup.option.Services {
 		srv := s
 		g.Go(func() error {
 			<-ctx.Done()
@@ -51,14 +60,14 @@ func (app *AppGroup) Run() error {
 		})
 	}
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, app.opts.sigs...)
+	signal.Notify(c, appGroup.option.Signals...)
 	g.Go(func() error {
 		for {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-c:
-				_ = app.Stop()
+				_ = appGroup.Stop()
 			}
 		}
 	})
@@ -68,9 +77,9 @@ func (app *AppGroup) Run() error {
 	return nil
 }
 
-func (app *AppGroup) Stop() error {
-	if app.cancel != nil {
-		app.cancel()
+func (appGroup *AppGroup) Stop() error {
+	if appGroup.cancel != nil {
+		appGroup.cancel()
 	}
 	return nil
 }

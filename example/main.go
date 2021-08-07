@@ -6,41 +6,45 @@ import (
 	lifecycle "github.com/cesc1802/go-app-lifecycle"
 )
 
-type HelloWorldHttpService struct {
+type Service1 struct {
 }
 
-func (service *HelloWorldHttpService) Start() error {
-	fmt.Print("start helloworld service")
+func (service *Service1) Start() error {
+	fmt.Println("start service 1")
 	return nil
 }
 
-func (service *HelloWorldHttpService) Stop() error {
-	fmt.Print("stop helloworld service")
+func (service *Service1) Stop() error {
+	fmt.Println("stop service 1")
 	return nil
 }
 
-type OrderdHttpService struct {
+type Service2 struct {
 }
 
-func (service *OrderdHttpService) Start() error {
-	fmt.Print("start order service")
+func (service *Service2) Start() error {
+	fmt.Println("start service 2")
 	return nil
 }
 
-func (service *OrderdHttpService) Stop() error {
-	fmt.Print("stop order service")
+func (service *Service2) Stop() error {
+	fmt.Println("stop service 2")
 	return nil
 }
 
 func main() {
-	var service HelloWorldHttpService
-	var orderService OrderdHttpService
+	var service1 Service1
+	var service2 Service2
 
-	appGroup := lifecycle.NewAppGroup(lifecycle.Services(&service, &orderService), lifecycle.Name("hello service"))
+	appGroup := lifecycle.NewAppGroup(lifecycle.AppGroupOption{
+		Name:     "app group",
+		Services: []lifecycle.Service{&service1, &service2},
+	})
 
 	if err := appGroup.Run(); err != nil {
 		fmt.Printf("Finish with error: %+v\n", err)
 		return
 	}
+
 	fmt.Printf("Done!")
 }
