@@ -3,41 +3,41 @@ package lifecycle
 import (
 	"context"
 	"errors"
-	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"golang.org/x/sync/errgroup"
 )
 
-
-type App struct {
-	opts 	options
-	ctx 	context.Context
-	cancel	func()
+type AppGroup struct {
+	opts   options
+	ctx    context.Context
+	cancel func()
 }
 
 type Service interface {
 	Start() error
-	Stop() 	error
+	Stop() error
 }
 
-func New(opts ...Option) *App {
+func NewAppGroup(opts ...Option) *AppGroup {
 	options := options{
-		ctx:    context.Background(),
-		sigs:   []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
+		ctx:  context.Background(),
+		sigs: []os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT},
 	}
 	for _, o := range opts {
 		o(&options)
 	}
 	ctx, cancel := context.WithCancel(options.ctx)
-	return &App{
-		opts: 	options,
-		ctx: 	ctx,
+	return &AppGroup{
+		opts:   options,
+		ctx:    ctx,
 		cancel: cancel,
 	}
 }
 
-func (app *App) Run() error {
+func (app *AppGroup) Run() error {
 	g, ctx := errgroup.WithContext(app.ctx)
 
 	for _, s := range app.opts.services {
@@ -68,7 +68,7 @@ func (app *App) Run() error {
 	return nil
 }
 
-func (app *App) Stop() error {
+func (app *AppGroup) Stop() error {
 	if app.cancel != nil {
 		app.cancel()
 	}

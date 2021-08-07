@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+
 	lifecycle "github.com/cesc1802/go-app-lifecycle"
 )
 
 type HelloWorldHttpService struct {
-
 }
 
 func (service *HelloWorldHttpService) Start() error {
@@ -20,7 +20,6 @@ func (service *HelloWorldHttpService) Stop() error {
 }
 
 type OrderdHttpService struct {
-
 }
 
 func (service *OrderdHttpService) Start() error {
@@ -37,14 +36,11 @@ func main() {
 	var service HelloWorldHttpService
 	var orderService OrderdHttpService
 
-	app := lifecycle.New(lifecycle.Services(&service, &orderService), lifecycle.Name("hello service"))
+	appGroup := lifecycle.NewAppGroup(lifecycle.Services(&service, &orderService), lifecycle.Name("hello service"))
 
-	if err := app.Run(); err != nil {
+	if err := appGroup.Run(); err != nil {
 		fmt.Printf("Finish with error: %+v\n", err)
 		return
 	}
 	fmt.Printf("Done!")
 }
-
-
-
